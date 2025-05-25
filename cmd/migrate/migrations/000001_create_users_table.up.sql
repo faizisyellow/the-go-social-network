@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXIST users{
+    id int PRIMARY KEY,
+    username VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password CHAR(60) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+}

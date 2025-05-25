@@ -5,16 +5,26 @@ import (
 	"net/http"
 	"time"
 
+	"faizisyellow.github.com/thegosocialnetwork/internal/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
 type application struct {
 	config config
+	store  store.Storage
 }
 
 type config struct {
 	addr string
+	db   dbConfig
+}
+
+type dbConfig struct {
+	addr        string
+	maxOpenConn int
+	maxIdleConn int
+	maxIdleTime string
 }
 
 func (app *application) mount() http.Handler {
@@ -26,9 +36,6 @@ func (app *application) mount() http.Handler {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	// Set a timeout value on the request context (ctx), that will signal
-	// through ctx.Done() that the request has timed out and further
-	// processing should be stopped.
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Route("/v1", func(r chi.Router) {
@@ -48,7 +55,7 @@ func (app *application) run(mux http.Handler) error {
 		IdleTimeout:  time.Minute,
 	}
 
-	log.Printf("Server has started at localhost%v\n", app.config.addr)
+	log.Printf("server has started at localhost%v\n", app.config.addr)
 
 	return srv.ListenAndServe()
 }
