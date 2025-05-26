@@ -7,12 +7,13 @@ import (
 )
 
 type Post struct {
-	ID        int    `json:"id"`
-	Content   string `json:"content"`
-	Title     string `json:"title"`
-	UserID    int    `json:"user_id"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	ID        int       `json:"id"`
+	Content   string    `json:"content"`
+	Title     string    `json:"title"`
+	UserID    int       `json:"user_id"`
+	CreatedAt string    `json:"created_at"`
+	UpdatedAt string    `json:"updated_at"`
+	Comments  []Comment `json:"comments"`
 }
 
 type PostStore struct {
