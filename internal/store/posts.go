@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 )
 
 type Post struct {
@@ -43,17 +44,25 @@ func (p *PostStore) Create(ctx context.Context, payload *Post) error {
 	return nil
 }
 
-func (p *PostStore) GetPostByID(ctx context.Context, payload int, post *Post) error {
+func (p *PostStore) GetPostByID(ctx context.Context, payload int) (*Post, error) {
 
 	qry := `SELECT id, title, content, user_id, created_at, updated_at  FROM posts WHERE id = ?`
 
 	row := p.db.QueryRowContext(ctx, qry, payload)
 
+	var post Post
+
 	err := row.Scan(&post.ID, &post.Title, &post.Content, &post.UserID, &post.CreatedAt, &post.UpdatedAt)
+
 	if err != nil {
-		return err
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrNotFound
+		default:
+			return nil, err
+		}
 	}
 
-	return nil
+	return &post, nil
 
 }

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -10,16 +10,21 @@ import (
 )
 
 type CreatePostPayload struct {
-	Title   string `json:"title"`
-	Content string `json:"content"`
-	UserID  int    `json:"user_id"`
+	Title   string `json:"title" validate:"required,max=100"`
+	Content string `json:"content" validate:"required,max=255"`
+	UserID  int    `json:"user_id" validate:"required"`
 }
 
 func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request) {
 	var payload CreatePostPayload
 
+	if err := Validate.Struct(payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
 	if err := readJSON(w, r, &payload); err != nil {
-		WriteJSONError(w, http.StatusBadRequest, err.Error())
+		app.badRequestResponse(w, r, err)
 		return
 	}
 
@@ -30,12 +35,12 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	if err := app.store.Posts.Create(r.Context(), post); err != nil {
-		WriteJSONError(w, http.StatusInternalServerError, err.Error())
+		app.internalServerError(w, r, err)
 		return
 	}
 
 	if err := writeJSON(w, http.StatusCreated, &post); err != nil {
-		WriteJSONError(w, http.StatusInternalServerError, err.Error())
+		app.internalServerError(w, r, err)
 		return
 	}
 
@@ -43,17 +48,19 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 
 func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 	postID, err := strconv.Atoi(chi.URLParam(r, "postID"))
-
-	fmt.Println("ID: ", postID)
 	if err != nil {
-		WriteJSONError(w, http.StatusInternalServerError, err.Error())
+		app.internalServerError(w, r, err)
 		return
 	}
 
-	post := store.Post{}
-
-	if err := app.store.Posts.GetPostByID(r.Context(), postID, &post); err != nil {
-		WriteJSONError(w, http.StatusInternalServerError, err.Error())
+	post, err := app.store.Posts.GetPostByID(r.Context(), postID)
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			app.notFoundResponse(w, r, err)
+		default:
+			app.internalServerError(w, r, err)
+		}
 		return
 	}
 
