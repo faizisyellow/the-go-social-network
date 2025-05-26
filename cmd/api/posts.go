@@ -11,7 +11,7 @@ import (
 
 type CreatePostPayload struct {
 	Title   string `json:"title" validate:"required,max=100"`
-	Content string `json:"content" validate:"required,max=255"`
+	Content string `json:"content" validate:"required,max=500"`
 	UserID  int    `json:"user_id" validate:"required"`
 }
 
