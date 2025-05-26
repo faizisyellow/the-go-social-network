@@ -12,7 +12,7 @@ func writeJSON(w http.ResponseWriter, status int, data any) error {
 	return json.NewEncoder(w).Encode(data)
 }
 
-func readJson(w http.ResponseWriter, r *http.Request, data any) error {
+func readJSON(w http.ResponseWriter, r *http.Request, data any) error {
 
 	// TODO: limit of the body size for 1mb
 	maxBytes := 1_048_578
