@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
 )
 
 type Comment struct {
@@ -38,7 +37,6 @@ func (c *CommentsStore) GetPostByID(ctx context.Context, postID int) ([]Comment,
 
 		err := rows.Scan(&c.ID, &c.PostID, &c.UserID, &c.Content, &c.CreatedAt, &c.User.Username, &c.User.ID)
 		if err != nil {
-			fmt.Println("waduppp")
 			return nil, err
 		}
 

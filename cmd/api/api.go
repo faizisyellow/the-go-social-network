@@ -31,12 +31,12 @@ type dbConfig struct {
 func (app *application) mount() http.Handler {
 	r := chi.NewRouter()
 
-	// A good base middleware stack
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
+	// proccesing should be stop
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Route("/v1", func(r chi.Router) {
@@ -46,7 +46,11 @@ func (app *application) mount() http.Handler {
 			r.Post("/", app.createPostHandler)
 
 			r.Route("/{postID}", func(r chi.Router) {
+				r.Use(app.PostContextMiddleware)
+
 				r.Get("/", app.getPostHandler)
+				r.Patch("/", app.UpdatePostHandler)
+				r.Delete("/", app.DeletePostHandler)
 			})
 
 		})

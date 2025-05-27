@@ -45,11 +45,11 @@ func (p *PostStore) Create(ctx context.Context, payload *Post) error {
 	return nil
 }
 
-func (p *PostStore) GetPostByID(ctx context.Context, payload int) (*Post, error) {
+func (p *PostStore) GetPostByID(ctx context.Context, id int) (*Post, error) {
 
 	qry := `SELECT id, title, content, user_id, created_at, updated_at  FROM posts WHERE id = ?`
 
-	row := p.db.QueryRowContext(ctx, qry, payload)
+	row := p.db.QueryRowContext(ctx, qry, id)
 
 	var post Post
 
@@ -66,4 +66,44 @@ func (p *PostStore) GetPostByID(ctx context.Context, payload int) (*Post, error)
 
 	return &post, nil
 
+}
+
+func (p *PostStore) Delete(ctx context.Context, id int) error {
+	query := `DELETE FROM posts WHERE id = ?`
+
+	res, err := p.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
+
+func (p *PostStore) Update(ctx context.Context, payload *Post) error {
+	query := `UPDATE posts SET title = ?, content = ? WHERE id = ?`
+
+	res, err := p.db.ExecContext(ctx, query, &payload.Title, &payload.Content, &payload.ID)
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return ErrNotFound
+	}
+
+	return nil
 }
