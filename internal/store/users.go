@@ -21,6 +21,9 @@ type UsersStore struct {
 func (u *UsersStore) Create(ctx context.Context, payload *User) error {
 	qry := `INSERT INTO users (username,password,email) VALUES(?,?,?)`
 
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
 	u.db.ExecContext(ctx, qry, payload.Username, payload.Password, payload.Email)
 
 	rqry := `SELECT id,created_at FROM users WHERE id=(SELECT LAST_INSERT_ID)`

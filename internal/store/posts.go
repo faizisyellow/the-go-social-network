@@ -14,6 +14,7 @@ type Post struct {
 	CreatedAt string    `json:"created_at"`
 	UpdatedAt string    `json:"updated_at"`
 	Comments  []Comment `json:"comments"`
+	Version   int       `json:"version"`
 }
 
 type PostStore struct {
@@ -22,6 +23,9 @@ type PostStore struct {
 
 func (p *PostStore) Create(ctx context.Context, payload *Post) error {
 	qry := `INSERT INTO posts (content, title, user_id) VALUES(?,?,?)`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 
 	result, err := p.db.ExecContext(ctx, qry, payload.Content, payload.Title, payload.UserID)
 	if err != nil {
@@ -47,13 +51,16 @@ func (p *PostStore) Create(ctx context.Context, payload *Post) error {
 
 func (p *PostStore) GetPostByID(ctx context.Context, id int) (*Post, error) {
 
-	qry := `SELECT id, title, content, user_id, created_at, updated_at  FROM posts WHERE id = ?`
+	qry := `SELECT id, title, content, user_id, version, created_at, updated_at  FROM posts WHERE id = ?`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 
 	row := p.db.QueryRowContext(ctx, qry, id)
 
 	var post Post
 
-	err := row.Scan(&post.ID, &post.Title, &post.Content, &post.UserID, &post.CreatedAt, &post.UpdatedAt)
+	err := row.Scan(&post.ID, &post.Title, &post.Content, &post.UserID, &post.Version, &post.CreatedAt, &post.UpdatedAt)
 
 	if err != nil {
 		switch {
@@ -70,6 +77,9 @@ func (p *PostStore) GetPostByID(ctx context.Context, id int) (*Post, error) {
 
 func (p *PostStore) Delete(ctx context.Context, id int) error {
 	query := `DELETE FROM posts WHERE id = ?`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 
 	res, err := p.db.ExecContext(ctx, query, id)
 	if err != nil {
@@ -89,9 +99,12 @@ func (p *PostStore) Delete(ctx context.Context, id int) error {
 }
 
 func (p *PostStore) Update(ctx context.Context, payload *Post) error {
-	query := `UPDATE posts SET title = ?, content = ? WHERE id = ?`
+	query := `UPDATE posts SET title = ?, content = ?, version = version + 1 WHERE id = ? AND version = ?`
 
-	res, err := p.db.ExecContext(ctx, query, &payload.Title, &payload.Content, &payload.ID)
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	res, err := p.db.ExecContext(ctx, query, &payload.Title, &payload.Content, &payload.ID, &payload.Version)
 	if err != nil {
 		return err
 	}
