@@ -17,6 +17,7 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
+	// TODO: better config with default value (to do debug need default key)
 	config := config{
 		addr: os.Getenv("PORT"),
 		db: dbConfig{

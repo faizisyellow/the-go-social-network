@@ -52,7 +52,7 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
-	post := getPostFormCtx(r)
+	post := getPostFromContext(r)
 
 	comments, err := app.store.Comments.GetPostByID(r.Context(), post.ID)
 	if err != nil {
@@ -104,7 +104,7 @@ type UpdatePostPayload struct {
 
 func (app *application) UpdatePostHandler(w http.ResponseWriter, r *http.Request) {
 
-	post := getPostFormCtx(r)
+	post := getPostFromContext(r)
 
 	var newPostPayload UpdatePostPayload
 
@@ -163,7 +163,7 @@ func (app *application) PostContextMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func getPostFormCtx(r *http.Request) *store.Post {
+func getPostFromContext(r *http.Request) *store.Post {
 
 	return r.Context().Value(postCtx).(*store.Post)
 }

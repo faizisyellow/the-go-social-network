@@ -9,7 +9,7 @@ type CommentPayload struct {
 }
 
 func (app *application) createCommentHandler(w http.ResponseWriter, r *http.Request) {
-	post := getPostFormCtx(r)
+	post := getPostFromContext(r)
 
 	var payload CommentPayload
 
@@ -30,5 +30,9 @@ func (app *application) createCommentHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	app.jsonResponse(w, 201, "comment created successfully")
+	if err := app.jsonResponse(w, http.StatusCreated, "comment created successfully"); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
 }
