@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"strings"
 )
 
 type Follower struct {
@@ -21,10 +22,15 @@ func (f *FollowersStore) Follow(ctx context.Context, toFollowUserID, userID int)
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	// TODO: handle duplicate key error
 	_, err := f.db.ExecContext(ctx, query, &toFollowUserID, &userID)
 	if err != nil {
-		return err
+		duplicateKey := "Error 1062"
+
+		if strings.Contains(err.Error(), duplicateKey) {
+			return ErrConflict
+		} else {
+			return err
+		}
 	}
 
 	return nil
