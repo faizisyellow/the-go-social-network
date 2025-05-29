@@ -1,0 +1,86 @@
+basePath: /v1
+definitions:
+  store.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      username:
+        type: string
+    type: object
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: Restful Api for The Go Social Network, the media social for ghopers.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: The Go Social Network Restful API
+  version: "1.0"
+paths:
+  /users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Fetch a user profile by ID
+      parameters:
+      - description: userID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.User'
+        "400":
+          description: Bad Request
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+      summary: Fetch a user profile
+      tags:
+      - users
+  /users/{id}/follow:
+    put:
+      consumes:
+      - application/json
+      description: Follows a user profile by ID
+      parameters:
+      - description: userID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: follow user successfully
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+      summary: Follows a user
+      tags:
+      - users
+securityDefinitions:
+  ApikeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
