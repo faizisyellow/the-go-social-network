@@ -106,6 +106,29 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "main.registerUserPayload": {
+            "type": "object",
+            "required": [
+                "email",
+                "password",
+                "user"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 72,
+                    "minLength": 3
+                },
+                "user": {
+                    "type": "string",
+                    "maxLength": 100
+                }
+            }
+        },
         "store.User": {
             "type": "object",
             "properties": {

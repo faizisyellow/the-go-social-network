@@ -2,6 +2,8 @@ package main
 
 import (
 	"net/http"
+
+	"go.uber.org/zap"
 )
 
 func (app *application) internalServerError(w http.ResponseWriter, r *http.Request, err error) {
@@ -23,7 +25,7 @@ func (app *application) conflictErrorResponse(w http.ResponseWriter, r *http.Req
 }
 
 func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request, err error) {
-	app.logger.Errorw("not found error:", "path", r.URL.Path, "method", r.Method, "error", err.Error())
+	app.logger.Errorf("internal server error:", zap.Error(err))
 
 	WriteJSONError(w, http.StatusNotFound, "not found")
 }

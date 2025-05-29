@@ -1,5 +1,22 @@
 basePath: /v1
 definitions:
+  main.registerUserPayload:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      password:
+        maxLength: 72
+        minLength: 3
+        type: string
+      user:
+        maxLength: 100
+        type: string
+    required:
+    - email
+    - password
+    - user
+    type: object
   store.User:
     properties:
       created_at:

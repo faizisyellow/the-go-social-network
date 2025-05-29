@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	"faizisyellow.github.com/thegosocialnetwork/internal/db"
@@ -33,15 +34,9 @@ const version = "0.0.1"
 // @decsription
 func main() {
 
-	//TODO: fix the error logger in error.go
-	loggerzap, _ := zap.NewProduction()
-	defer loggerzap.Sync()
-
-	logger := loggerzap.Sugar()
-
 	err := godotenv.Load()
 	if err != nil {
-		logger.Fatal(err)
+		log.Fatal(err)
 	}
 
 	// TODO: better config with default value (to do debug need default key)
@@ -55,6 +50,11 @@ func main() {
 		},
 		env: os.Getenv("ENV"),
 	}
+
+	//TODO: fix the error logger in error.go
+	logger := zap.Must(zap.NewProduction()).Sugar()
+
+	defer logger.Sync()
 
 	db, err := db.New(config.db.addr, config.db.maxOpenConn, config.db.maxIdleConn, config.db.maxIdleTime)
 	if err != nil {
