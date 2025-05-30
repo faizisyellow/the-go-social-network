@@ -137,11 +137,16 @@ func Seed(store store.Storage) {
 func generateUsers(num int) []*store.User {
 	users := make([]*store.User, num)
 
+	ps := gofakeit.Password(true, false, false, true, false, 5)
+
 	for i, _ := range users {
 		users[i] = &store.User{
 			Username: gofakeit.Username(),
 			Email:    gofakeit.Email(),
-			Password: gofakeit.Password(true, false, false, true, false, 5),
+			Password: store.HashPassword{
+				Text: &ps,
+				Hash: []byte("helloworld"),
+			},
 		}
 	}
 

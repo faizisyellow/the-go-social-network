@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"faizisyellow.github.com/thegosocialnetwork/internal/db"
+	"faizisyellow.github.com/thegosocialnetwork/internal/helpers"
 	"faizisyellow.github.com/thegosocialnetwork/internal/store"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
@@ -42,14 +43,14 @@ func main() {
 
 	// TODO: better config with default value (to do debug need default key)
 	config := config{
-		addr: os.Getenv("PORT"),
+		addr: helpers.DefaultString(os.Getenv("PORT"), ":8080"),
 		db: dbConfig{
 			addr:        os.Getenv("DB_ADDRESS"),
 			maxOpenConn: 30,
 			maxIdleConn: 30,
 			maxIdleTime: "15m",
 		},
-		env: os.Getenv("ENV"),
+		env: helpers.DefaultString(os.Getenv("ENV"), "Development"),
 		mail: mail{
 			exp: time.Hour * 24 * 3, // 3 days
 		},
