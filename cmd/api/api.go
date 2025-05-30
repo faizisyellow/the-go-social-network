@@ -13,23 +13,28 @@ import (
 	"go.uber.org/zap"
 )
 
-type application struct {
-	config config
-	store  store.Storage
-	logger *zap.SugaredLogger
+type dbConfig struct {
+	addr        string
+	maxOpenConn int
+	maxIdleConn int
+	maxIdleTime string
+}
+
+type mail struct {
+	exp time.Duration
 }
 
 type config struct {
 	addr string
 	db   dbConfig
 	env  string
+	mail
 }
 
-type dbConfig struct {
-	addr        string
-	maxOpenConn int
-	maxIdleConn int
-	maxIdleTime string
+type application struct {
+	config config
+	store  store.Storage
+	logger *zap.SugaredLogger
 }
 
 func (app *application) mount() http.Handler {

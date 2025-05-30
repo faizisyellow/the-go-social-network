@@ -4,8 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
+)
+
+var (
+	ErrDuplicateEmail = errors.New("a user with this email already exists")
 )
 
 type User struct {
@@ -37,18 +43,25 @@ type UsersStore struct {
 	db *sql.DB
 }
 
-func (u *UsersStore) Create(ctx context.Context, payload *User) error {
+func (u *UsersStore) Create(ctx context.Context, tx *sql.Tx, payload *User) error {
 	qry := `INSERT INTO users (username,password,email) VALUES(?,?,?)`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	u.db.ExecContext(ctx, qry, payload.Username, payload.Password, payload.Email)
+	_, err := tx.ExecContext(ctx, qry, payload.Username, payload.Password, payload.Email)
+	duplicateKey := "Error 1062"
+
+	if strings.Contains(err.Error(), duplicateKey) {
+		return ErrDuplicateEmail
+	} else if err != nil {
+		return err
+	}
 
 	rqry := `SELECT id,created_at FROM users WHERE id=(SELECT LAST_INSERT_ID)`
-	row := u.db.QueryRow(rqry)
+	row := tx.QueryRow(rqry)
 
-	err := row.Scan(&payload.ID, &payload.CreatedAt)
+	err = row.Scan(&payload.ID, &payload.CreatedAt)
 	if err == sql.ErrNoRows {
 		return errors.New("empty row")
 	} else if err != nil {
@@ -78,4 +91,35 @@ func (u *UsersStore) GetByID(ctx context.Context, userId int) (*User, error) {
 	}
 
 	return &user, nil
+}
+
+func (u *UsersStore) createUserInvitation(ctx context.Context, tx *sql.Tx, token string, exp time.Duration, userID int) error {
+	query := `INSERT INTO user_invitations(token,user_id,expire) VALUES(?,?,?)`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := tx.ExecContext(ctx, query, token, userID, time.Now().Add(exp))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (u *UsersStore) CreateAndInvite(ctx context.Context, user *User, token string, invitationExp time.Duration) error {
+
+	return withTx(u.db, ctx, func(tx *sql.Tx) error {
+		// transcations
+
+		if err := u.Create(ctx, tx, user); err != nil {
+			return err
+		}
+
+		if err := u.createUserInvitation(ctx, tx, token, invitationExp, user.ID); err != nil {
+			return err
+		}
+
+		return nil
+	})
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"faizisyellow.github.com/thegosocialnetwork/internal/db"
 	"faizisyellow.github.com/thegosocialnetwork/internal/store"
@@ -49,6 +50,9 @@ func main() {
 			maxIdleTime: "15m",
 		},
 		env: os.Getenv("ENV"),
+		mail: mail{
+			exp: time.Hour * 24 * 3, // 3 days
+		},
 	}
 
 	//TODO: fix the error logger in error.go
