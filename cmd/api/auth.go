@@ -10,7 +10,7 @@ import (
 )
 
 type registerUserPayload struct {
-	Username string `json:"user" validate:"required,max=100"`
+	Username string `json:"username" validate:"required,max=100"`
 	Email    string `json:"email" validate:"required,email,max=255"`
 	Password string `json:"password" validate:"required,min=3,max=72"`
 }
@@ -26,7 +26,7 @@ type registerUserPayload struct {
 //	@Success		201		{object}	store.User			"User Registered"
 //	@Failure		400		{object}	error
 //	@Failure		500		{object}	error
-//	@Route			/authentication/user [post]
+//	@Router			/authentication/user [post]
 func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Request) {
 	var payloadRegister registerUserPayload
 
@@ -67,7 +67,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := app.jsonResponse(w, http.StatusCreated, nil); err != nil {
+	if err := app.jsonResponse(w, http.StatusCreated, "user registered"); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}

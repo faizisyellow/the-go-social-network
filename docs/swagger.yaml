@@ -9,13 +9,13 @@ definitions:
         maxLength: 72
         minLength: 3
         type: string
-      user:
+      username:
         maxLength: 100
         type: string
     required:
     - email
     - password
-    - user
+    - username
     type: object
   store.User:
     properties:
@@ -41,6 +41,34 @@ info:
   title: The Go Social Network Restful API
   version: "1.0"
 paths:
+  /authentication/user:
+    post:
+      consumes:
+      - application/json
+      description: Register a user
+      parameters:
+      - description: User Credentials
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.registerUserPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User Registered
+          schema:
+            $ref: '#/definitions/store.User'
+        "400":
+          description: Bad Request
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Register a user
+      tags:
+      - authentication
   /users/{id}:
     get:
       consumes:

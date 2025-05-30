@@ -49,17 +49,26 @@ func (u *UsersStore) Create(ctx context.Context, tx *sql.Tx, payload *User) erro
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	_, err := tx.ExecContext(ctx, qry, payload.Username, payload.Password, payload.Email)
-	duplicateKey := "Error 1062"
+	res, err := tx.ExecContext(ctx, qry, &payload.Username, &payload.Password.Hash, &payload.Email)
 
-	if strings.Contains(err.Error(), duplicateKey) {
-		return ErrDuplicateEmail
-	} else if err != nil {
+	//TODO: fix the handling error duplicate key
+	if err != nil {
+		duplicateKey := "Error 1062"
+		switch {
+		case strings.Contains(err.Error(), duplicateKey):
+			return ErrDuplicateEmail
+		default:
+			return err
+		}
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
 		return err
 	}
 
-	rqry := `SELECT id,created_at FROM users WHERE id=(SELECT LAST_INSERT_ID)`
-	row := tx.QueryRow(rqry)
+	rqry := `SELECT id,created_at FROM users WHERE id = ?`
+	row := tx.QueryRow(rqry, id)
 
 	err = row.Scan(&payload.ID, &payload.CreatedAt)
 	if err == sql.ErrNoRows {
