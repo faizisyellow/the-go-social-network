@@ -26,6 +26,7 @@ type Storage struct {
 		Create(context.Context, *sql.Tx, *User) error
 		GetByID(context.Context, int) (*User, error)
 		CreateAndInvite(ctx context.Context, user *User, token string, invitationExp time.Duration) error
+		Activate(context.Context, string) error
 	}
 
 	Comments interface {
@@ -56,7 +57,7 @@ func withTx(db *sql.DB, ctx context.Context, fnc func(*sql.Tx) error) error {
 	}
 
 	if err := fnc(tx); err != nil {
-		err = tx.Rollback()
+		_ = tx.Rollback()
 		return err
 	}
 

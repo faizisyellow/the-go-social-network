@@ -1,10 +1,9 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"net/http"
 
+	"faizisyellow.github.com/thegosocialnetwork/internal/helpers"
 	"faizisyellow.github.com/thegosocialnetwork/internal/store"
 	"github.com/google/uuid"
 )
@@ -15,6 +14,11 @@ type registerUserPayload struct {
 	Password string `json:"password" validate:"required,min=3,max=72"`
 }
 
+type userWithToken struct {
+	*store.User
+	Token string `json:"token"`
+}
+
 // RegisterUserHandler godoc
 //
 //	@Summary		Register a user
@@ -23,7 +27,7 @@ type registerUserPayload struct {
 //	@Accept			json
 //	@Produce		json
 //	@Param			payload	body		registerUserPayload	true	"User Credentials"
-//	@Success		201		{object}	store.User			"User Registered"
+//	@Success		201		{object}	userWithToken		"User Registered"
 //	@Failure		400		{object}	error
 //	@Failure		500		{object}	error
 //	@Router			/authentication/user [post]
@@ -51,12 +55,16 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Token invitation
 	plainToken := uuid.New().String()
 
-	hash := sha256.Sum256([]byte(plainToken))
-	hashToken := hex.EncodeToString(hash[:])
+	token, err := helpers.HashToken(plainToken)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
 
-	err := app.store.Users.CreateAndInvite(r.Context(), user, hashToken, app.config.mail.exp)
+	err = app.store.Users.CreateAndInvite(r.Context(), user, token, app.config.mail.exp)
 	if err != nil {
 		switch err {
 		case store.ErrDuplicateEmail:
@@ -67,7 +75,12 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := app.jsonResponse(w, http.StatusCreated, "user registered"); err != nil {
+	userWToken := userWithToken{
+		User:  user,
+		Token: plainToken,
+	}
+
+	if err := app.jsonResponse(w, http.StatusCreated, userWToken); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}

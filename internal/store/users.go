@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"faizisyellow.github.com/thegosocialnetwork/internal/helpers"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -20,6 +21,7 @@ type User struct {
 	Email     string       `json:"email"`
 	Password  HashPassword `json:"-"`
 	CreatedAt string       `json:"created_at"`
+	IsActive  bool         `json:"is_active"`
 }
 
 type HashPassword struct {
@@ -51,7 +53,6 @@ func (u *UsersStore) Create(ctx context.Context, tx *sql.Tx, payload *User) erro
 
 	res, err := tx.ExecContext(ctx, qry, &payload.Username, &payload.Password.Hash, &payload.Email)
 
-	//TODO: fix the handling error duplicate key
 	if err != nil {
 		duplicateKey := "Error 1062"
 		switch {
@@ -126,6 +127,89 @@ func (u *UsersStore) CreateAndInvite(ctx context.Context, user *User, token stri
 		}
 
 		if err := u.createUserInvitation(ctx, tx, token, invitationExp, user.ID); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (u *UsersStore) GetUserInvitation(ctx context.Context, tx *sql.Tx, token string) (*User, error) {
+	query := `
+		SELECT u.id, u.username, u.email, u.created_at, u.is_active FROM users u
+		JOIN user_invitations ui ON u.id = ui.user_id
+		WHERE ui.token = ? AND ui.expire > ? 
+	`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	hashToken, err := helpers.HashToken(token)
+	if err != nil {
+		return nil, err
+	}
+
+	user := &User{}
+	err = tx.QueryRowContext(ctx, query, hashToken, time.Now()).Scan(&user.ID, &user.Username, &user.Email, &user.CreatedAt, &user.IsActive)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return nil, ErrNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return user, nil
+}
+
+func (u *UsersStore) update(ctx context.Context, tx *sql.Tx, user *User) error {
+
+	query := `UPDATE users SET username = ?, email = ?, is_active = ? WHERE id = ?`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := tx.ExecContext(ctx, query, &user.Username, &user.Email, &user.IsActive, &user.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func (u *UsersStore) deleteUserInvitations(ctx context.Context, tx *sql.Tx, userID int) error {
+	query := `DELETE FROM user_invitations WHERE user_id = ?`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := tx.ExecContext(ctx, query, userID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (u *UsersStore) Activate(ctx context.Context, token string) error {
+
+	return withTx(u.db, ctx, func(tx *sql.Tx) error {
+		// 1. Find the user that this token invitation belongs to
+		user, err := u.GetUserInvitation(ctx, tx, token)
+		if err != nil {
+			return err
+		}
+
+		// 2. Update the user
+		user.IsActive = true
+		if err := u.update(ctx, tx, user); err != nil {
+			return err
+		}
+
+		// 3. Clean the invitations
+		if err := u.deleteUserInvitations(ctx, tx, user.ID); err != nil {
 			return err
 		}
 
