@@ -75,6 +75,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// TODO: the user is_active is not suppose to be true yet
 	userWToken := userWithToken{
 		User:  user,
 		Token: plainToken,
