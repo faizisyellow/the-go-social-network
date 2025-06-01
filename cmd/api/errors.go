@@ -1,13 +1,11 @@
 package main
 
 import (
-	"log"
 	"net/http"
 )
 
 func (app *application) internalServerError(w http.ResponseWriter, r *http.Request, err error) {
-	// app.logger.Errorw("internal server error:", "path", r.URL, "method", r.Method, "error", err.Error())
-	log.Println("ERROR: ", err)
+	app.logger.Errorw("internal server error:", "path", r.URL, "method", r.Method, "error", err.Error())
 
 	WriteJSONError(w, http.StatusInternalServerError, "the server encountered a problem")
 }
@@ -25,8 +23,7 @@ func (app *application) conflictErrorResponse(w http.ResponseWriter, r *http.Req
 }
 
 func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request, err error) {
-	// app.logger.Errorf("internal server error:", zap.Error(err))
-	log.Println("ERROR: ", err)
+	app.logger.Errorw("not found error:", "path", r.URL, "method", r.Method, "error", err.Error())
 
-	WriteJSONError(w, http.StatusNotFound, "not found")
+	WriteJSONError(w, http.StatusNotFound, err.Error())
 }
