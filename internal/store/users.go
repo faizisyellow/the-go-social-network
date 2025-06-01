@@ -41,6 +41,15 @@ func (h *HashPassword) Set(text string) error {
 	return nil
 }
 
+func (h *HashPassword) Compare(password string) error {
+	err := bcrypt.CompareHashAndPassword(h.Hash, []byte(password))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type UsersStore struct {
 	db *sql.DB
 }
@@ -253,7 +262,7 @@ func (u *UsersStore) Delete(ctx context.Context, userID int) error {
 }
 
 func (u *UsersStore) GetByEmail(ctx context.Context, email string) (*User, error) {
-	query := `SELECT id FROM users WHERE email = ? AND is_active = 1`
+	query := `SELECT id, email, password FROM users WHERE email = ? AND is_active = 1`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
@@ -261,7 +270,7 @@ func (u *UsersStore) GetByEmail(ctx context.Context, email string) (*User, error
 	rows := u.db.QueryRowContext(ctx, query, email)
 
 	user := &User{}
-	err := rows.Scan(&user.ID)
+	err := rows.Scan(&user.ID, &user.Email, &user.Password.Hash)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
