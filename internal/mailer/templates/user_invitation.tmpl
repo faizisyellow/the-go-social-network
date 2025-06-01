@@ -1,0 +1,23 @@
+{{define "subject"}} Finish Registration with The Go Social Network {{end}}
+
+{{define "body"}}
+
+<!doctype html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width" />
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    </head>
+
+    <body>
+        <p>HI, {{.Username}} </p>
+        <p>Thanks for signing up for The Go Social Network, we're excited to have you on board! </p>
+        <p>Before you can start using The GO Social Network, you need to confirm your email address. Click the link below to confim your email address: </p>
+        <p><a href="{{.ActivationUrl}}">{{.ActivationUrl}}<a/> </p>
+        <p>If you want to activate your account manually copy and paste the code from the link above</p>
+        <p>If you didn't sign up for The Go Social Network, you can safely ignore this email.</p>
+        <p>Thanks,</p>
+        <p>The Go Social Network Team</p>
+    </body>
+</html>
+{{end}}

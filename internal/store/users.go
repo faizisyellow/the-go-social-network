@@ -216,3 +216,38 @@ func (u *UsersStore) Activate(ctx context.Context, token string) error {
 		return nil
 	})
 }
+
+// delete user
+func (u *UsersStore) delete(ctx context.Context, tx *sql.Tx, userID int) error {
+	query := `DELETE FROM users WHERE id = ?`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	res, err := tx.ExecContext(ctx, query, userID)
+	if err != nil {
+		return err
+	}
+
+	isSuccess, _ := res.RowsAffected()
+
+	if isSuccess == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
+
+func (u *UsersStore) Delete(ctx context.Context, userID int) error {
+	return withTx(u.db, ctx, func(tx *sql.Tx) error {
+		if err := u.delete(ctx, tx, userID); err != nil {
+			return err
+		}
+
+		if err := u.deleteUserInvitations(ctx, tx, userID); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}

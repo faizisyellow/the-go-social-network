@@ -7,6 +7,7 @@ import (
 
 	"faizisyellow.github.com/thegosocialnetwork/internal/db"
 	"faizisyellow.github.com/thegosocialnetwork/internal/helpers"
+	"faizisyellow.github.com/thegosocialnetwork/internal/mailer"
 	"faizisyellow.github.com/thegosocialnetwork/internal/store"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
@@ -51,9 +52,14 @@ func main() {
 			maxIdleTime: "15m",
 		},
 		env: helpers.DefaultString(os.Getenv("ENV"), "Development"),
-		mail: mail{
+		mail: mailConfig{
+			fromEmail: helpers.DefaultString(os.Getenv("FROM_EMAIL"), ""),
+			sendGrid: sendgridConfig{
+				apiKey: helpers.DefaultString(os.Getenv("SENDGRID_API_KEY"), ""),
+			},
 			exp: time.Hour * 24 * 3, // 3 days
 		},
+		frontendURL: helpers.DefaultString(os.Getenv("FRONTEND_URL"), "http://localhost:4173"),
 	}
 
 	//TODO: fix the error logger in error.go
@@ -70,10 +76,13 @@ func main() {
 
 	logger.Info("database connection pool established")
 
+	mailer := mailer.NewSendgrid(config.mail.sendGrid.apiKey, config.mail.fromEmail)
+
 	app := &application{
 		config: config,
 		store:  store.NewStorage(db),
 		logger: logger,
+		mailer: mailer,
 	}
 
 	logger.Fatal(app.run(app.mount()))

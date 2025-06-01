@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 
 	"faizisyellow.github.com/thegosocialnetwork/internal/helpers"
+	"faizisyellow.github.com/thegosocialnetwork/internal/mailer"
 	"faizisyellow.github.com/thegosocialnetwork/internal/store"
 	"github.com/google/uuid"
 )
@@ -64,7 +67,9 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = app.store.Users.CreateAndInvite(r.Context(), user, token, app.config.mail.exp)
+	ctx := r.Context()
+
+	err = app.store.Users.CreateAndInvite(ctx, user, token, app.config.mail.exp)
 	if err != nil {
 		switch err {
 		case store.ErrDuplicateEmail:
@@ -80,6 +85,36 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		User:  user,
 		Token: plainToken,
 	}
+
+	isDevEnv := app.config.env == "Development"
+
+	// the links is from the frontend router (http://localhost:5173/confirm/{plaintoken})
+	activationUrl := fmt.Sprintf("%s/confirm/%s", app.config.frontendURL, plainToken)
+
+	// struct literal
+	vars := struct {
+		Username      string
+		ActivationUrl string
+	}{
+		Username:      user.Username,
+		ActivationUrl: activationUrl,
+	}
+
+	// send email
+	status, err := app.mailer.Send(mailer.UserWelcomeTemplate, user.Username, user.Email, vars, !isDevEnv)
+	if err != nil {
+		log.Printf("error sending welcome email, error: %v", err.Error())
+
+		// rollback user creation if email fails (SAGA pattern)
+		if err := app.store.Users.Delete(ctx, user.ID); err != nil {
+			log.Printf("error deleting user while rollback, error: %v", err.Error())
+		}
+
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	app.logger.Infow("Email sent", "status code", status)
 
 	if err := app.jsonResponse(w, http.StatusCreated, userWToken); err != nil {
 		app.internalServerError(w, r, err)

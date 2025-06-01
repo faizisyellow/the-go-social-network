@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"faizisyellow.github.com/thegosocialnetwork/docs"
+	"faizisyellow.github.com/thegosocialnetwork/internal/mailer"
 	"faizisyellow.github.com/thegosocialnetwork/internal/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -20,21 +21,29 @@ type dbConfig struct {
 	maxIdleTime string
 }
 
-type mail struct {
-	exp time.Duration
+type sendgridConfig struct {
+	apiKey string
+}
+
+type mailConfig struct {
+	sendGrid  sendgridConfig
+	fromEmail string
+	exp       time.Duration
 }
 
 type config struct {
-	addr string
-	db   dbConfig
-	env  string
-	mail
+	addr        string
+	db          dbConfig
+	env         string
+	mail        mailConfig
+	frontendURL string
 }
 
 type application struct {
 	config config
 	store  store.Storage
 	logger *zap.SugaredLogger
+	mailer mailer.Client
 }
 
 func (app *application) mount() http.Handler {
