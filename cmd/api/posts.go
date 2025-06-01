@@ -17,7 +17,6 @@ const postCtx postKey = "post"
 type CreatePostPayload struct {
 	Title   string `json:"title" validate:"required,max=100"`
 	Content string `json:"content" validate:"required,max=500"`
-	UserID  int    `json:"user_id" validate:"required"`
 }
 
 func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request) {
@@ -33,10 +32,12 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	user := getUserFromContext(r)
+
 	post := &store.Post{
 		Title:   payload.Title,
 		Content: payload.Content,
-		UserID:  payload.UserID,
+		UserID:  user.ID,
 	}
 
 	if err := app.store.Posts.Create(r.Context(), post); err != nil {

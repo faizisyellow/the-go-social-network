@@ -1,5 +1,18 @@
 basePath: /v1
 definitions:
+  main.createTokenPayload:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      password:
+        maxLength: 72
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    type: object
   main.registerUserPayload:
     properties:
       email:
@@ -58,6 +71,35 @@ info:
   title: The Go Social Network Restful API
   version: "1.0"
 paths:
+  /authentication/token:
+    post:
+      consumes:
+      - application/json
+      description: Create a token authentication for user
+      parameters:
+      - description: User Credentials
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.createTokenPayload'
+      responses:
+        "201":
+          description: Token
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Create a token for a user
+      tags:
+      - authentication
   /authentication/user:
     post:
       consumes:

@@ -82,7 +82,7 @@ func (u *UsersStore) Create(ctx context.Context, tx *sql.Tx, payload *User) erro
 }
 
 func (u *UsersStore) GetByID(ctx context.Context, userId int) (*User, error) {
-	query := `SELECT id, username, email, password, created_at FROM users WHERE id = ?`
+	query := `SELECT id, username, email, password, created_at FROM users WHERE id = ? AND is_active = true`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
@@ -90,7 +90,7 @@ func (u *UsersStore) GetByID(ctx context.Context, userId int) (*User, error) {
 	res := u.db.QueryRowContext(ctx, query, userId)
 
 	user := User{}
-	err := res.Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.CreatedAt)
+	err := res.Scan(&user.ID, &user.Username, &user.Email, &user.Password.Hash, &user.CreatedAt)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
@@ -250,4 +250,26 @@ func (u *UsersStore) Delete(ctx context.Context, userID int) error {
 
 		return nil
 	})
+}
+
+func (u *UsersStore) GetByEmail(ctx context.Context, email string) (*User, error) {
+	query := `SELECT id FROM users WHERE email = ? AND is_active = 1`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	rows := u.db.QueryRowContext(ctx, query, email)
+
+	user := &User{}
+	err := rows.Scan(&user.ID)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return nil, ErrNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return user, nil
 }

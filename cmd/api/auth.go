@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"faizisyellow.github.com/thegosocialnetwork/internal/helpers"
 	"faizisyellow.github.com/thegosocialnetwork/internal/mailer"
 	"faizisyellow.github.com/thegosocialnetwork/internal/store"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -122,4 +124,73 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+}
+
+type createTokenPayload struct {
+	Email    string `json:"email" validate:"required,email,max=255"`
+	Password string `json:"password" validate:"required,min=3,max=72"`
+}
+
+// CreateTokenHandler godoc
+//
+//	@Summary		Create a token for a user
+//	@Description	Create a token authentication for user
+//	@Tags			authentication
+//	@Accept			json
+//	@Param			payload	body		createTokenPayload	true	"User Credentials"
+//	@Success		201		{string}	string				"Token"
+//	@Failure		400		{object}	error
+//	@Failure		401		{object}	error
+//	@Failure		500		{object}	error
+//	@Router			/authentication/token [post]
+func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Request) {
+
+	// 1. get payload
+	var payloadCreateToken createTokenPayload
+
+	if err := readJSON(w, r, &payloadCreateToken); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if err := Validate.Struct(payloadCreateToken); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+
+	}
+
+	// 2. fetch the user
+	user, err := app.store.Users.GetByEmail(r.Context(), payloadCreateToken.Email)
+	if err != nil {
+		switch err {
+		case store.ErrNotFound:
+			app.unAuthorizedErrorResponse(w, r, err)
+		default:
+			app.internalServerError(w, r, err)
+		}
+
+		return
+	}
+
+	// generate the token -> add claims
+	claims := jwt.MapClaims{
+		"sub": user.ID,
+		"exp": time.Now().Add(app.config.auth.token.exp).Unix(),
+		"iat": time.Now().Unix(),
+		"nbf": time.Now().Unix(),
+		"iss": app.config.auth.token.iss,
+		"aud": app.config.auth.token.iss,
+	}
+
+	token, err := app.authenticator.GenerateToken(claims)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if err := app.jsonResponse(w, http.StatusCreated, token); err != nil {
+		app.internalServerError(w, r, err)
+
+		return
+	}
 }

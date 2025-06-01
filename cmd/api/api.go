@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"faizisyellow.github.com/thegosocialnetwork/docs"
+	"faizisyellow.github.com/thegosocialnetwork/internal/auth"
 	"faizisyellow.github.com/thegosocialnetwork/internal/mailer"
 	"faizisyellow.github.com/thegosocialnetwork/internal/store"
 	"github.com/go-chi/chi/v5"
@@ -36,8 +37,15 @@ type basicAuthConfig struct {
 	pass string
 }
 
+type tokenConfig struct {
+	secret string
+	exp    time.Duration
+	iss    string
+}
+
 type authConfig struct {
 	basic basicAuthConfig
+	token tokenConfig
 }
 
 type config struct {
@@ -50,10 +58,11 @@ type config struct {
 }
 
 type application struct {
-	config config
-	store  store.Storage
-	logger *zap.SugaredLogger
-	mailer mailer.Client
+	config        config
+	store         store.Storage
+	logger        *zap.SugaredLogger
+	mailer        mailer.Client
+	authenticator auth.Authenticator
 }
 
 func (app *application) mount() http.Handler {
@@ -75,6 +84,8 @@ func (app *application) mount() http.Handler {
 			httpSwagger.URL(docsURL)))
 
 		r.Route("/posts", func(r chi.Router) {
+			r.Use(app.AuthTokenMiddleware)
+
 			r.Post("/", app.createPostHandler)
 
 			r.Route("/{postID}", func(r chi.Router) {
@@ -94,6 +105,7 @@ func (app *application) mount() http.Handler {
 			r.Put("/activate/{token}", app.activateUserHandler)
 
 			r.Route("/{userID}", func(r chi.Router) {
+				r.Use(app.AuthTokenMiddleware)
 				r.Use(app.userContextMiddleware)
 
 				r.Get("/", app.getUserHandler)
@@ -104,12 +116,15 @@ func (app *application) mount() http.Handler {
 			})
 
 			r.Group(func(r chi.Router) {
+				r.Use(app.AuthTokenMiddleware)
 				r.Get("/feed", app.getUserFeedHandler)
 			})
 		})
 
+		// public routes
 		r.Route("/authentication", func(r chi.Router) {
 			r.Post("/user", app.registerUserHandler)
+			r.Post("/token", app.createTokenHandler)
 		})
 	})
 

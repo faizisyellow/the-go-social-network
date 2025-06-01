@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"faizisyellow.github.com/thegosocialnetwork/internal/auth"
 	"faizisyellow.github.com/thegosocialnetwork/internal/db"
 	"faizisyellow.github.com/thegosocialnetwork/internal/helpers"
 	"faizisyellow.github.com/thegosocialnetwork/internal/mailer"
@@ -61,6 +62,11 @@ func main() {
 		},
 		frontendURL: helpers.DefaultString(os.Getenv("FRONTEND_URL"), "http://localhost:4173"),
 		auth: authConfig{
+			token: tokenConfig{
+				secret: helpers.DefaultString(os.Getenv("JWT_TOKEN_SECRET"), "helloworld"),
+				iss:    "thegosocialnetwork",
+				exp:    time.Hour * 24 * 3, // 3 days
+			},
 			basic: basicAuthConfig{
 				user: helpers.DefaultString(os.Getenv("AUTH_BASIC_USER"), "admin"),
 				pass: helpers.DefaultString(os.Getenv("AUTH_BASIC_PASSWORD"), "admin"),
@@ -84,11 +90,14 @@ func main() {
 
 	mailer := mailer.NewSendgrid(config.mail.sendGrid.apiKey, config.mail.fromEmail)
 
+	jwtAuthenticator := auth.NewJwtAuthenticator(config.auth.token.secret, config.auth.token.iss, config.auth.token.iss)
+
 	app := &application{
-		config: config,
-		store:  store.NewStorage(db),
-		logger: logger,
-		mailer: mailer,
+		config:        config,
+		store:         store.NewStorage(db),
+		logger:        logger,
+		mailer:        mailer,
+		authenticator: jwtAuthenticator,
 	}
 
 	logger.Fatal(app.run(app.mount()))
