@@ -60,6 +60,12 @@ func main() {
 			exp: time.Hour * 24 * 3, // 3 days
 		},
 		frontendURL: helpers.DefaultString(os.Getenv("FRONTEND_URL"), "http://localhost:4173"),
+		auth: authConfig{
+			basic: basicAuthConfig{
+				user: helpers.DefaultString(os.Getenv("AUTH_BASIC_USER"), "admin"),
+				pass: helpers.DefaultString(os.Getenv("AUTH_BASIC_PASSWORD"), "admin"),
+			},
+		},
 	}
 
 	//TODO: fix the error logger in error.go
