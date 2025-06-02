@@ -166,10 +166,10 @@ func (app *application) run(mux http.Handler) error {
 		shutdown <- srv.Shutdown(ctx)
 	}()
 
-	app.logger.Infow("server has started", "addr", app.config.addr, "env", app.config.env)
+	app.logger.Infow("server has started", "addr", fmt.Sprintf("localhost%v", app.config.addr), "env", app.config.env)
 
 	err := srv.ListenAndServe()
-	if !errors.Is(err, http.ErrServerClosed) {
+	if errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
 
@@ -178,7 +178,7 @@ func (app *application) run(mux http.Handler) error {
 		return err
 	}
 
-	app.logger.Infow("server has stopped", "addr", app.config.addr, "env", app.config.env)
+	app.logger.Infow("server has stoped", "addr", fmt.Sprintf("localhost%v", app.config.addr), "env", app.config.env)
 
 	return nil
 }

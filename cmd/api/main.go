@@ -32,12 +32,12 @@ const version = "0.0.1"
 
 //
 
-//	@securityDefinitions.apikey	BearerAuth
-//	@in							header
-//	@name						Authorization
-//	@description				Type "Bearer" followed by a space and JWT token.
+// @securityDefinitions.apikey	BearerAuth
+// @in							header
+// @name						Authorization
+// @description				Type "Bearer" followed by a space and JWT token.
 //
-//	@security					BearerAuth
+// @security					BearerAuth
 func main() {
 
 	err := godotenv.Load()
