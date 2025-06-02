@@ -1,8 +1,10 @@
 package main
 
 import (
+	"expvar"
 	"log"
 	"os"
+	"runtime"
 	"time"
 
 	"faizisyellow.github.com/thegosocialnetwork/internal/auth"
@@ -101,6 +103,15 @@ func main() {
 		mailer:        mailer,
 		authenticator: jwtAuthenticator,
 	}
+
+	// metrics collected
+	expvar.NewString("version").Set(version)
+	expvar.Publish("database", expvar.Func(func() any {
+		return db.Stats()
+	}))
+	expvar.Publish("goroutines", expvar.Func(func() any {
+		return runtime.NumGoroutine()
+	}))
 
 	logger.Fatal(app.run(app.mount()))
 }
