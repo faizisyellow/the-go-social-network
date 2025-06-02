@@ -22,6 +22,8 @@ type User struct {
 	Password  HashPassword `json:"-"`
 	CreatedAt string       `json:"created_at"`
 	IsActive  bool         `json:"is_active"`
+	RoleID    int          `json:"role_id"`
+	Role      Role         `json:"role"`
 }
 
 type HashPassword struct {
@@ -55,12 +57,18 @@ type UsersStore struct {
 }
 
 func (u *UsersStore) Create(ctx context.Context, tx *sql.Tx, payload *User) error {
-	qry := `INSERT INTO users (username,password,email) VALUES(?,?,?)`
+	qry := `INSERT INTO users (username,password,email,role_id) VALUES(?,?,?,(SELECT id FROM roles WHERE name = ?))`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	res, err := tx.ExecContext(ctx, qry, &payload.Username, &payload.Password.Hash, &payload.Email)
+	role := payload.Role.Name
+
+	if role == "" {
+		role = "user"
+	}
+
+	res, err := tx.ExecContext(ctx, qry, payload.Username, payload.Password.Hash, payload.Email, role)
 
 	if err != nil {
 		duplicateKey := "Error 1062"
@@ -91,7 +99,10 @@ func (u *UsersStore) Create(ctx context.Context, tx *sql.Tx, payload *User) erro
 }
 
 func (u *UsersStore) GetByID(ctx context.Context, userId int) (*User, error) {
-	query := `SELECT id, username, email, password, created_at FROM users WHERE id = ? AND is_active = true`
+	query := `
+	SELECT users.id, username, email, password, created_at, role_id, roles.*
+	FROM users JOIN roles ON users.role_id = roles.id WHERE users.id = ? AND is_active = 1;
+	`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
@@ -99,7 +110,15 @@ func (u *UsersStore) GetByID(ctx context.Context, userId int) (*User, error) {
 	res := u.db.QueryRowContext(ctx, query, userId)
 
 	user := User{}
-	err := res.Scan(&user.ID, &user.Username, &user.Email, &user.Password.Hash, &user.CreatedAt)
+	err := res.Scan(
+		&user.ID, &user.Username, &user.Email,
+		&user.Password.Hash, &user.CreatedAt,
+		&user.RoleID,
+		&user.Role.ID,
+		&user.Role.Name,
+		&user.Role.Level,
+		&user.Role.Description,
+	)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:

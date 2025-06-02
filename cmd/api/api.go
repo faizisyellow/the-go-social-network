@@ -92,8 +92,8 @@ func (app *application) mount() http.Handler {
 				r.Use(app.PostContextMiddleware)
 
 				r.Get("/", app.getPostHandler)
-				r.Patch("/", app.UpdatePostHandler)
-				r.Delete("/", app.DeletePostHandler)
+				r.Patch("/", app.CheckPostOwnership("moderator", app.UpdatePostHandler))
+				r.Delete("/", app.CheckPostOwnership("admin", app.DeletePostHandler))
 
 				r.Route("/comments", func(r chi.Router) {
 					r.Post("/", app.createCommentHandler)
@@ -101,6 +101,7 @@ func (app *application) mount() http.Handler {
 			})
 		})
 
+		// TODO: add authorization
 		r.Route("/users", func(r chi.Router) {
 			r.Put("/activate/{token}", app.activateUserHandler)
 

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"faizisyellow.github.com/thegosocialnetwork/internal/store"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -95,4 +96,40 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 
 	})
+}
+
+func (app *application) CheckPostOwnership(Requiredrole string, next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		post := getPostFromContext(r)
+		user := getUserFromContext(r)
+
+		// if it is the user's post
+		if post.UserID == user.ID {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// role presedence check
+		allowed, err := app.checkRolePresedence(r.Context(), user, Requiredrole)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+
+		if !allowed {
+			app.forbiddenErrorResponse(w, r)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (app *application) checkRolePresedence(ctx context.Context, user *store.User, rolename string) (bool, error) {
+	role, err := app.store.Roles.GetByName(ctx, rolename)
+	if err != nil {
+		return false, err
+	}
+
+	return user.Role.Level >= role.Level, nil
 }
