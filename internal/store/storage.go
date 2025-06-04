@@ -39,6 +39,9 @@ type Storage struct {
 	Followers interface {
 		Follow(ctx context.Context, toFollowUserID, userID int) error
 		UnFollow(ctx context.Context, toUnFollowUserID, userID int) error
+		TotalFollowersAndFollowing(ctx context.Context, userID int) (*FollowersAndFollowingCount, error)
+		GetUserFollowing(context.Context, int, *[]*UserFollows) error
+		GetUserFollowers(context.Context, int, *[]*UserFollows) error
 	}
 
 	Roles interface {

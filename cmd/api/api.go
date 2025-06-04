@@ -126,6 +126,7 @@ func (app *application) mount() http.Handler {
 			r.Route("/{userID}", func(r chi.Router) {
 				r.Use(app.AuthTokenMiddleware)
 
+				// get user from auth
 				r.Get("/", app.getUserHandler)
 
 				// userID is the ID of the user we want to follow.
@@ -135,6 +136,7 @@ func (app *application) mount() http.Handler {
 
 			r.Group(func(r chi.Router) {
 				r.Use(app.AuthTokenMiddleware)
+				r.Get("/profile", app.getUserProfileHandler)
 				r.Get("/feed", app.getUserFeedHandler)
 			})
 		})

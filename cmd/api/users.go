@@ -12,6 +12,14 @@ type userKey string
 
 const userCtx userKey = "user"
 
+type UserProfile struct {
+	ID                          int                              `json:"id"`
+	Username                    string                           `json:"username"`
+	TotalsFollowersAndFollowing store.FollowersAndFollowingCount `json:"total_followers_and_following"`
+	Following                   []*store.UserFollows             `json:"following"`
+	Followers                   []*store.UserFollows             `json:"followers"`
+}
+
 // GetUser godoc
 //
 //	@summary		Fetch a user profile
@@ -143,4 +151,46 @@ func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Reque
 		app.internalServerError(w, r, err)
 		return
 	}
+}
+
+func (app *application) getUserProfileHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	user := getUserFromContext(r)
+
+	countFollowersAndFollowing, err := app.store.Followers.TotalFollowersAndFollowing(ctx, user.ID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	var followers []*store.UserFollows
+	var following []*store.UserFollows
+
+	err = app.store.Followers.GetUserFollowing(ctx, user.ID, &following)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	err = app.store.Followers.GetUserFollowers(ctx, user.ID, &followers)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+
+	}
+
+	profile := UserProfile{
+		ID:                          user.ID,
+		Username:                    user.Username,
+		TotalsFollowersAndFollowing: *countFollowersAndFollowing,
+		Following:                   following,
+		Followers:                   followers,
+	}
+
+	if err := app.jsonResponse(w, http.StatusOK, profile); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
 }
