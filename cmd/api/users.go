@@ -39,16 +39,15 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 //	@summary		Follows a user
 //	@Description	Follows a user profile by ID
 //	@Tags			users
-//	@Accept			json
 //	@Produce		json
 //	@Param			id	path		int		true	"userID"
-//	@Success		200	{object}	string	"follow user successfully"
+//	@Success		201	{object}	string	"follow user successfully"
 //	@Failure		400	{object}	error
 //	@Failure		404	{object}	error
 //	@Securiy		ApikeyAuth
 //	@Router			/users/{id}/follow [put]
 func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request) {
-	followUser := getUserFromContext(r)
+	followerUser := getUserFromContext(r)
 
 	followedID, err := strconv.Atoi(chi.URLParam(r, "userID"))
 	if err != nil {
@@ -56,7 +55,7 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	err = app.store.Followers.Follow(r.Context(), followUser.ID, followedID)
+	err = app.store.Followers.Follow(r.Context(), followedID, followerUser.ID)
 	if err != nil {
 		switch err {
 		case store.ErrConflict:
@@ -68,63 +67,45 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := app.jsonResponse(w, http.StatusNoContent, "follow user successfully"); err != nil {
+	if err := app.jsonResponse(w, http.StatusCreated, "follow user successfully"); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
 }
 
+// UnFollowUser godoc
+//
+//	@summary		Unfollows a user
+//	@Description	Unfollows a user profile by ID
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int		true	"userID"
+//	@Success		201	{object}	string	"unfollow user successfully"
+//	@Failure		400	{object}	error
+//	@Failure		404	{object}	error
+//	@Securiy		ApikeyAuth
+//	@Router			/users/{id}/unfollow [put]
 func (app *application) unFollowUserHandler(w http.ResponseWriter, r *http.Request) {
-	followUser := getUserFromContext(r)
+	user := getUserFromContext(r)
 
-	unfollowID, err := strconv.Atoi(chi.URLParam(r, "userID"))
+	unfollowUserID, err := strconv.Atoi(chi.URLParam(r, "userID"))
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
 
-	err = app.store.Followers.UnFollow(r.Context(), unfollowID, followUser.ID)
+	err = app.store.Followers.UnFollow(r.Context(), unfollowUserID, user.ID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
 
-	if err := app.jsonResponse(w, http.StatusNoContent, "unfollow user successfully"); err != nil {
+	if err := app.jsonResponse(w, http.StatusCreated, "unfollow user successfully"); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
 }
-
-/*
-	func (app *application) userContextMiddleware(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			userID, err := strconv.Atoi(chi.URLParam(r, "userID"))
-			if err != nil {
-				app.badRequestResponse(w, r, err)
-				return
-			}
-
-			ctx := r.Context()
-
-			user, err := app.store.Users.GetByID(ctx, userID)
-			if err != nil {
-				switch err {
-				case store.ErrNotFound:
-					app.notFoundResponse(w, r, err)
-				default:
-					app.internalServerError(w, r, err)
-				}
-
-				return
-			}
-
-			ctx = context.WithValue(ctx, userCtx, user)
-
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
-
-}
-*/
 
 func getUserFromContext(r *http.Request) *store.User {
 

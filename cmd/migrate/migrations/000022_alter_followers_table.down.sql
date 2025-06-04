@@ -1,0 +1,1 @@
+ALTER TABLE followers RENAME followed_id to user_id;

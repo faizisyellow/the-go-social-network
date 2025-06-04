@@ -7,7 +7,7 @@ import (
 )
 
 type Follower struct {
-	UserID     int    `json:"user_id"`
+	FollowedID int    `json:"followed_id"`
 	FollowerID int    `json:"follower_id"`
 	CreatedAt  string `json:"created_at"`
 }
@@ -17,7 +17,7 @@ type FollowersStore struct {
 }
 
 func (f *FollowersStore) Follow(ctx context.Context, toFollowUserID, userID int) error {
-	query := `INSERT INTO followers(user_id,follower_id) VALUES(?,?)`
+	query := `INSERT INTO followers(followed_id,follower_id) VALUES(?,?)`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
@@ -38,7 +38,7 @@ func (f *FollowersStore) Follow(ctx context.Context, toFollowUserID, userID int)
 
 // TODO: for unfollow user if possible just create a followed column and then just toggle it (update true or false)
 func (f *FollowersStore) UnFollow(ctx context.Context, toUnFollowUserID, userID int) error {
-	query := `DELETE FROM followers WHERE user_id = ? AND follower_id = ?`
+	query := `DELETE FROM followers WHERE followed_id = ? AND follower_id = ?`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()

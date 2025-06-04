@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -46,4 +47,16 @@ func (app *application) jsonResponse(w http.ResponseWriter, status int, data any
 	}
 
 	return writeJSON(w, status, &envelope{Data: data})
+}
+
+func (app *application) responseNoContent(w http.ResponseWriter) error {
+
+	w.WriteHeader(http.StatusNoContent)
+
+	_, err := fmt.Fprint(w)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
